@@ -131,7 +131,12 @@ echo "============================="
 #cd contracts
 
 # Install dependencies if not already installed
-#npm install --save-dev hardhat ethers @openzeppelin/contracts
+npm install --save-dev hardhat
+npm install @openzeppelin/contracts
+npm install --save-dev typescript ts-node @types/node
+npm install --save-dev @typechain/ethers-v5 @typechain/hardhat ethers @nomiclabs/hardhat-ethers
+npm install --save-dev @nomiclabs/hardhat-ethers chai @nomiclabs/hardhat-waffle ethers
+
 
 #echo "Compiling contracts..."
 #npx hardhat compile
