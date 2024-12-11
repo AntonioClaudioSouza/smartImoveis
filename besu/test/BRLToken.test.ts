@@ -15,6 +15,8 @@ describe("BRLToken", function () {
         // Implantar o contrato com o endereço do owner
         BRLToken = await ethers.getContractFactory("BRLToken");
         brlToken = await BRLToken.deploy(owner.address);
+
+        console.log("BRLToken deployed to:", brlToken);
     });
 
     it("Deve ter o nome e o símbolo corretos", async function () {
