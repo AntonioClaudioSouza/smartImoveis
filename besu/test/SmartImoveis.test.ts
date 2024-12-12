@@ -48,7 +48,6 @@ describe("SmartImoveis Contract", function () {
           expect.fail("A transação deveria ter revertido");
         } catch (error: any) {
           // Verificando se o erro contém a string relevante do OpenZeppelin
-          console.log(error.message);
           expect(error.message).to.include("AccessControlUnauthorizedAccount");
         }
       });
