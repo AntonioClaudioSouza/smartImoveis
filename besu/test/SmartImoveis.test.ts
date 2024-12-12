@@ -28,26 +28,27 @@ describe("SmartImoveis Contract", function () {
   describe("Taxa de Plataforma", function () {
     it("Deve permitir que o admin defina a taxa de plataforma", async function () {
       const novaTaxa = 200; // Exemplo de 2% (base 10000)
-      await SmartTokenInstance.definirTaxaPlataforma(novaTaxa);
+      await SmartTokenInstance.setTaxaPlataforma(novaTaxa);
 
-      const taxa = await SmartTokenInstance.taxaPlataforma();
+      const taxa = await SmartTokenInstance.getTaxaLocacao();
       expect(taxa).to.equal(novaTaxa);
     });
 
     it("Não deve permitir que o admin defina uma taxa acima do limite máximo de 10%", async function () {
       const taxaAlta = 1200; // 12% (base 10000)
-      await expect(SmartTokenInstance.definirTaxaPlataforma(taxaAlta))
+      await expect(SmartTokenInstance.setTaxaPlataforma(taxaAlta))
         .to.be.revertedWith("Taxa nao pode exceder o limite maximo de 10%");
     });
 
     it("Não deve permitir que um endereço sem a role ADMIN defina a taxa de plataforma", async function () {
         const novaTaxa = 500; // 5% (base 10000)
         try {
-          await SmartTokenInstance.connect(addr1 as unknown as Signer).definirTaxaPlataforma(novaTaxa);
+          await SmartTokenInstance.connect(addr1 as unknown as Signer).setTaxaPlataforma(novaTaxa);
           // Se não falhar, devemos forçar uma falha no teste
           expect.fail("A transação deveria ter revertido");
         } catch (error: any) {
           // Verificando se o erro contém a string relevante do OpenZeppelin
+          console.log(error.message);
           expect(error.message).to.include("AccessControlUnauthorizedAccount");
         }
       });
