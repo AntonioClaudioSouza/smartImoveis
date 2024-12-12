@@ -1,31 +1,28 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { BRLToken, SmartImoveis } from "../typechain-types";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer } from "ethers";
 
 describe("SmartImoveis Contract", function () {
-  let BRLTokenContract: any;
-  let brlTokenInstance: any;
-  let SmartTokenContract: any;
-  let SmartTokenInstance: any;
-  let owner: any;
-  let addr1: any;
-  let addr2: any;
-  let addr3: any;
+  let brlTokenInstance: BRLToken;
+  let SmartTokenInstance: SmartImoveis;
+  let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress;
 
   beforeEach(async function () {
     // Pegando os signatários
     [owner, addr1, addr2, addr3] = await ethers.getSigners();
 
     // Implantar o contrato BRLToken (ERC20)
-    BRLTokenContract = await ethers.getContractFactory("BRLToken");
+    const BRLTokenContract = await ethers.getContractFactory("BRLToken");
     brlTokenInstance = await BRLTokenContract.deploy(owner.address);
     
     // Implantar o contrato SmartImoveis
-    SmartTokenContract = await ethers.getContractFactory("SmartImoveis");
-    SmartTokenInstance = await SmartTokenContract.deploy(brlTokenInstance.target);
+    const SmartTokenContract = await ethers.getContractFactory("SmartImoveis");
+    SmartTokenInstance = await SmartTokenContract.deploy(await brlTokenInstance.getAddress());
     
     // Verificar se o contrato foi implantado corretamente
-    expect(SmartTokenInstance.address).to.not.be.null;
+    expect(await SmartTokenInstance.getAddress()).to.not.be.null;
   });
 
   describe("Taxa de Plataforma", function () {
@@ -46,7 +43,7 @@ describe("SmartImoveis Contract", function () {
     it("Não deve permitir que um endereço sem a role ADMIN defina a taxa de plataforma", async function () {
         const novaTaxa = 500; // 5% (base 10000)
         try {
-          await SmartTokenInstance.connect(addr1).definirTaxaPlataforma(novaTaxa);
+          await SmartTokenInstance.connect(addr1 as unknown as Signer).definirTaxaPlataforma(novaTaxa);
           // Se não falhar, devemos forçar uma falha no teste
           expect.fail("A transação deveria ter revertido");
         } catch (error: any) {

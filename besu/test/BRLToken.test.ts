@@ -1,22 +1,22 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
+import { BRLToken } from "../typechain-types";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { Signer } from "ethers";
 
-describe("BRLToken", function () {
-    let BRLToken: any;
-    let brlToken: any;
-    let owner: any;
-    let addr1: any;
-    let addr2: any;
+describe("BRLToken Contract Test", function () {
+    let brlToken: BRLToken;
+    let owner: SignerWithAddress, addr1: SignerWithAddress, addr2: SignerWithAddress;
 
     beforeEach(async function () {
         // Obter as contas
         [owner, addr1, addr2] = await ethers.getSigners();
 
         // Implantar o contrato com o endereço do owner
-        BRLToken = await ethers.getContractFactory("BRLToken");
+        const BRLToken = await ethers.getContractFactory("BRLToken");
         brlToken = await BRLToken.deploy(owner.address);
 
-        console.log("BRLToken deployed to:", brlToken);
+        expect(await brlToken.getAddress()).to.not.be.null;
     });
 
     it("Deve ter o nome e o símbolo corretos", async function () {
@@ -41,7 +41,7 @@ describe("BRLToken", function () {
         const mintAmount = 1000;
     
         // Espera que o mint falhe para addr1 (não-proprietário) com o erro personalizado
-        await expect(brlToken.connect(addr1).mint(addr2.address, mintAmount))
+        await expect(brlToken.connect(addr1 as  unknown as Signer).mint(addr2.address, mintAmount))
             .to.be.revertedWithCustomError(brlToken, "OwnableUnauthorizedAccount")
             .withArgs(addr1.address);  // Verifica se o erro está associando o endereço de addr1
     });

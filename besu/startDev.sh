@@ -126,24 +126,23 @@ echo "============================="
 echo "Network started successfully!"
 echo "============================="
 
-#echo "Setting up Hardhat for contract deployment..."
-
-#cd contracts
-
 # Install dependencies if not already installed
-npm install --save-dev hardhat
 npm install @openzeppelin/contracts
-npm install --save-dev typescript ts-node @types/node
-npm install --save-dev @typechain/ethers-v5 @typechain/hardhat ethers @nomiclabs/hardhat-ethers
-npm install --save-dev @nomiclabs/hardhat-ethers chai @nomiclabs/hardhat-waffle ethers
+npm install --save-dev typescript ts-node @types/node hardhat @typechain/ethers-v5 @typechain/hardhat ethers @nomiclabs/hardhat-ethers @nomiclabs/hardhat-ethers chai @nomiclabs/hardhat-waffle ethers
 
+echo "Setting up Hardhat for contract deployment..."
 
-#echo "Compiling contracts..."
-#npx hardhat compile
+cd contracts
 
-#cd ..
+echo "Running typechain..."
+npx hardhat typechain
 
-#echo "Deploying contract..."
-#npx hardhat ignition deploy ./ignition/modules/Lock.ts --network besu << EOF
-#y
-#EOF
+echo "Compiling contracts..."
+npx hardhat compile
+
+cd ..
+
+echo "Deploying contract..."
+npx hardhat ignition deploy ./ignition/modules/DeploySmart.ts --network besu << EOF
+y
+EOF
