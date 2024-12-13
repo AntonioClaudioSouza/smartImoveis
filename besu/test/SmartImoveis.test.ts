@@ -25,10 +25,10 @@ describe("SmartImoveis Contract", function () {
     expect(await SmartTokenInstance.getAddress()).to.not.be.null;
   });
 
-  describe("Taxa de Plataforma", function () {
-    it("Deve permitir que o admin defina a taxa de plataforma", async function () {
+  describe("Taxa de locação da Plataforma", function () {
+    it("Deve permitir que o admin defina a taxa de locacação da plataforma", async function () {
       const novaTaxa = 200; // Exemplo de 2% (base 10000)
-      await SmartTokenInstance.setTaxaPlataforma(novaTaxa);
+      await SmartTokenInstance.setTaxaLocacao(novaTaxa);
 
       const taxa = await SmartTokenInstance.getTaxaLocacao();
       expect(taxa).to.equal(novaTaxa);
@@ -36,14 +36,14 @@ describe("SmartImoveis Contract", function () {
 
     it("Não deve permitir que o admin defina uma taxa acima do limite máximo de 10%", async function () {
       const taxaAlta = 1200; // 12% (base 10000)
-      await expect(SmartTokenInstance.setTaxaPlataforma(taxaAlta))
+      await expect(SmartTokenInstance.setTaxaLocacao(taxaAlta))
         .to.be.revertedWith("Taxa nao pode exceder o limite maximo de 10%");
     });
 
-    it("Não deve permitir que um endereço sem a role ADMIN defina a taxa de plataforma", async function () {
+    it("Não deve permitir que um endereço sem a role ADMIN defina a taxa de locação da plataforma", async function () {
         const novaTaxa = 500; // 5% (base 10000)
         try {
-          await SmartTokenInstance.connect(addr1 as unknown as Signer).setTaxaPlataforma(novaTaxa);
+          await SmartTokenInstance.connect(addr1 as unknown as Signer).setTaxaLocacao(novaTaxa);
           // Se não falhar, devemos forçar uma falha no teste
           expect.fail("A transação deveria ter revertido");
         } catch (error: any) {

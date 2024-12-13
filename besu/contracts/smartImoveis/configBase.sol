@@ -2,12 +2,20 @@
 pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./datatypes.sol";
-import "./events.sol";
+import "./eventsLibrary.sol";
 
+/**
+ * @title ConfigBase
+ * @dev Contrato base para configuração da plataforma
+ */
 contract ConfigBase is AccessControl {    
     using Events for *;
-    using Datatypes for *;
+
+    struct ConfigPlataforma {
+        uint256 proximoIdImovel;    // ID do próximo imóvel a ser registrado
+        uint256 taxaLocacao;        // Taxa administrativa de locação da plataforma (1% = 100)
+        uint256 taxaMaximaLocacao;  // Taxa máxima permitida (10% = 1000 em base 10000)        
+    }
 
     // Roles do AccessControl
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -16,29 +24,31 @@ contract ConfigBase is AccessControl {
     bytes32 public constant LOCATARIO_ROLE = keccak256("LOCATARIO_ROLE");
 
     // Estrutura de configuração da plataforma
-    Datatypes.ConfigPlataforma internal cfgPlataforma;
+    ConfigPlataforma internal config;
 
     constructor() {
-        cfgPlataforma = Datatypes.ConfigPlataforma({
+        config = ConfigPlataforma({
             proximoIdImovel: 1,
             taxaLocacao: 100,         // 1% em base 10000
             taxaMaximaLocacao: 1000  // 10% em base 10000
         });      
     }
-    
-    function getTaxaLocacao() public view returns (uint256) {
-        return cfgPlataforma.taxaLocacao;
+ 
+    function getTaxaLocacao() public view returns(uint256) {
+        return config.taxaLocacao;
     }
 
-    function getTaxaMaximaLocacao() public view returns (uint256) {
-        return cfgPlataforma.taxaMaximaLocacao;
+    function getTaxaMaximaLocacao() public view returns(uint256) {
+        return config.taxaMaximaLocacao;
     }
 
-    function setTaxaPlataforma(uint256 _novaTaxa) public onlyRole(ADMIN_ROLE) {
-        require(_novaTaxa <= cfgPlataforma.taxaMaximaLocacao, "Taxa nao pode exceder o limite maximo de 10%");
-        cfgPlataforma.taxaLocacao = _novaTaxa;        
+    function setTaxaLocacao(uint256 _novaTaxa) public onlyRole(ADMIN_ROLE) {
+        require(_novaTaxa >= 0, "Taxa deve ser maior ou igual a zero");        
+        require(_novaTaxa <= config.taxaMaximaLocacao, "Taxa nao pode exceder o limite maximo de 10%");
+        config.taxaLocacao = _novaTaxa;   
         emit Events.TaxaPlataformaDefinida(_novaTaxa);
     }
+
 
     // Funções para adicionar e remover address para ROLES de locatarios, proprietarios e vistoriadores
     function adicionarLocatario(address _locatario) public onlyRole(ADMIN_ROLE) {
