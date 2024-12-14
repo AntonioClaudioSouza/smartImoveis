@@ -7,7 +7,7 @@ pragma solidity ^0.8.28;
  */
 library Events {
     event ImovelAdicionado(uint256 id, address proprietario, uint256 aluguelMensal, uint256 taxaMulta, string uri);
-    event ImovelAlugado(uint256 id, address locatario, uint256 vencimento);
+    event ImovelAlugado(uint256 id, address locatario);
     event AluguelPago(uint256 id, address locatario, uint256 valor);
     event SolicitacaoEncerramento(uint256 id, address solicitante);
     event VistoriaConcluida(uint256 id, bool passou);

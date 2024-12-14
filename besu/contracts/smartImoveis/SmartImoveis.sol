@@ -34,18 +34,33 @@ contract SmartImoveis is ERC721URIStorage, ConfigBase {
         _grantRole(ADMIN_ROLE, msg.sender);      
     }
 
+    function getImovel(uint256 _id) public view returns(ImoveisLibrary.Imovel memory){
+        require(imoveis[_id].id != 0, "Imovel nao existe");
+        return imoveis[_id];
+    }
+
     function adicionarImovel(
         uint256 _aluguelMensal,
         uint256 _taxaMulta,
         string memory _uri
-    )public onlyRole(PROPRIETARIO_ROLE){
+    )public onlyRole(PROPRIETARIO_ROLE)returns(uint256){
         require(_aluguelMensal > 0, "Valor do aluguel deve ser maior que zero");
 
         uint256 id = config.proximoIdImovel;
         _mint(msg.sender, id);
         _setTokenURI(id, _uri);
+       
         imoveis.adicionarImovel(id, msg.sender, _aluguelMensal, _taxaMulta);
         emit Events.ImovelAdicionado(id, msg.sender, _aluguelMensal, _taxaMulta, _uri);
+       
         config.proximoIdImovel++;
+        return id;
+    }
+
+    function alugarImovel(uint256 _id) public onlyRole(LOCATARIO_ROLE){
+        require(imoveis[_id].id != 0, "Imovel nao existe");
+        imoveis.alugarImovel(_id, msg.sender);
+        alugueisDoLocatario[msg.sender].push(_id);
+        emit Events.ImovelAlugado(_id, msg.sender);
     }
 }

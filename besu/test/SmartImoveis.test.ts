@@ -145,4 +145,166 @@ describe("SmartImoveis Contract", function () {
       await expect(SmartTokenInstance.removerVistoriador(await addr2.getAddress())).to.be.revertedWith("O endereco nao e um vistoriador.");
     });
   });
+
+  describe("Função adicionarImovel", function () {      
+    it("Deve permitir que um proprietário adicione um imóvel", async function () {
+     
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+      
+      const aluguelMensal = 100000; //1000,00
+      const taxaMulta = 1000; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      const tx = await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      // Verificar evento emitido
+      await expect(tx).to.emit(SmartTokenInstance, "ImovelAdicionado").withArgs(
+        1, // ID do imóvel (primeiro imóvel criado)
+        await addr1.getAddress(),
+        aluguelMensal,
+        taxaMulta,
+        uri
+      );
+
+      // Verificar se o imóvel foi adicionado corretamente
+      const imovel = await SmartTokenInstance.getImovel(1);
+      expect(imovel.id).to.equal(1);
+      expect(imovel.proprietario).to.equal(await addr1.getAddress());
+      expect(imovel.valorLocacao).to.equal(aluguelMensal);
+      expect(imovel.taxaMulta).to.equal(taxaMulta);
+    });
+   
+    it("Não deve permitir que um endereço sem a role PROPRIETARIO_ROLE adicione um imóvel", async function () {
+      await SmartTokenInstance.adicionarLocatario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      const aluguelMensal = 100000; //1000,00
+      const taxaMulta = 1000; // 10%
+      const uri = "https://example.com/imovel/1";
+      
+      await expect(
+        SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri)
+      ).to.be.revertedWithCustomError(SmartTokenInstance, "AccessControlUnauthorizedAccount");
+    });
+   
+    it("Não deve permitir adicionar um imóvel com aluguel mensal igual a 0", async function () {
+    
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      const aluguelMensal = 0;
+      const taxaMulta = 1000; // 10%
+      const uri = "https://example.com/imovel/1";
+  
+      await expect(
+        SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri)
+      ).to.be.revertedWith("Valor do aluguel deve ser maior que zero");
+    });
+ 
+    it("Deve incrementar corretamente o ID do próximo imóvel", async function () {
+      
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      const aluguelMensal = 100000; //1000,00
+      const taxaMulta = 1000; // 10%
+      const uri1 = "https://example.com/imovel/1";
+      const uri2 = "https://example.com/imovel/2";
+  
+      // Adicionar o primeiro imóvel
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri1);
+  
+      // Adicionar o segundo imóvel
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri2);
+  
+      // Verificar IDs dos imóveis
+      const imovel1 = await SmartTokenInstance.getImovel(1);
+      const imovel2 = await SmartTokenInstance.getImovel(2);
+      expect(imovel1.id).to.equal(1);
+      expect(imovel2.id).to.equal(2);
+    });
+  });
+
+  describe("Função alugarImovel", function () {
+    it("Não deve permitir alugar um imóvel que não existe", async function () {
+
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+      
+      const aluguelMensal = 100000; //1000,00
+      const taxaMulta = 1000; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      const idImovel = 0;
+      await expect(
+        SmartTokenInstance.connect(addr2 as unknown as Signer).alugarImovel(idImovel)
+      ).to.be.revertedWith("Imovel nao existe");
+    }
+    );
+
+    it("Não deve permitir alugar um imóvel para um locatário que não existe", async function () {
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      const aluguelMensal = 100000; //1000,00
+      const taxaMulta = 1000; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      const idImovel = 1;
+      await expect(
+        SmartTokenInstance.connect(addr2 as unknown as Signer).alugarImovel(idImovel)
+      ).to.be.revertedWithCustomError(SmartTokenInstance, "AccessControlUnauthorizedAccount");
+    }
+    );
+
+    it("Deve permitir alugar um imóvel para um locatário", async function () {
+      
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+
+      const aluguelMensal = 100000; //1000,00
+      const taxaMulta = 1000; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      const idImovel = 1;
+      const tx = await SmartTokenInstance.connect(addr2 as unknown as Signer).alugarImovel(idImovel);
+
+      // Verificar evento emitido
+      await expect(tx).to.emit(SmartTokenInstance, "ImovelAlugado").withArgs(
+        1, // ID do imóvel (primeiro imóvel criado)
+        await addr2.getAddress(),
+      );
+
+      // Verificar se o imóvel foi alugado corretamente
+      const imovel = await SmartTokenInstance.getImovel(1);
+      expect(imovel.locatario).to.equal(await addr2.getAddress());
+    }
+    );
+  });
+
 });
