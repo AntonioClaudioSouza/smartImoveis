@@ -6,7 +6,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract BRLToken is ERC20, Ownable {
-    uint8 private _decimals = 3;
+    uint8 private _decimals = 2;
     constructor(address initialOwner)
         ERC20("BRL Token", "BRL")
         Ownable(initialOwner)
