@@ -13,7 +13,7 @@ library Events {
     event VistoriaConcluida(uint256 id, bool passou);
     event MultaAplicada(uint256 id, uint256 valor);
     event MultaPaga(uint256 id, address locatario, uint256 valor);
-    event EncerramentoConfirmado(uint256 id);
+    event EncerramentoConfirmado(uint256 id,address locatario);
     
     event TaxaPlataformaEnviada(uint256 id, uint256 valor);
     event TaxaPlataformaDefinida(uint256 novaTaxa);

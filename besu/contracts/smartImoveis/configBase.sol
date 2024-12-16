@@ -12,6 +12,7 @@ contract ConfigBase is AccessControl {
     using Events for *;
 
     struct ConfigPlataforma {
+        address adminAddress;       // Endereço do administrador
         uint256 proximoIdImovel;    // ID do próximo imóvel a ser registrado
         uint256 taxaLocacao;        // Taxa administrativa de locação da plataforma (1% = 100)
         uint256 taxaMaximaLocacao;  // Taxa máxima permitida (10% = 1000 em base 10000)        
@@ -30,10 +31,12 @@ contract ConfigBase is AccessControl {
         config = ConfigPlataforma({
             proximoIdImovel: 1,
             taxaLocacao: 100,         // 1% em base 10000
-            taxaMaximaLocacao: 1000  // 10% em base 10000
+            taxaMaximaLocacao: 1000,  // 10% em base 10000
+            adminAddress: msg.sender
         });      
     }
  
+     
     function getTaxaLocacao() public view returns(uint256) {
         return config.taxaLocacao;
     }
