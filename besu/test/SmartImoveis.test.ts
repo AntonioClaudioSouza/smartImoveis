@@ -27,7 +27,7 @@ describe("SmartImoveis Contract", function () {
 
   describe("Taxa de locação da Plataforma", function () {
     it("Deve permitir que o admin defina a taxa de locacação da plataforma", async function () {
-      const novaTaxa = 200; // Exemplo de 2% (base 10000)
+      const novaTaxa = 200; // Exemplo de 2%
       await SmartTokenInstance.setTaxaLocacao(novaTaxa);
 
       const taxa = await SmartTokenInstance.getTaxaLocacao();
@@ -35,13 +35,13 @@ describe("SmartImoveis Contract", function () {
     });
 
     it("Não deve permitir que o admin defina uma taxa acima do limite máximo de 10%", async function () {
-      const taxaAlta = 1200; // 12% (base 10000)
+      const taxaAlta = 1200; // 12%
       await expect(SmartTokenInstance.setTaxaLocacao(taxaAlta))
         .to.be.revertedWith("Taxa nao pode exceder o limite maximo de 10%");
     });
 
     it("Não deve permitir que um endereço sem a role ADMIN defina a taxa de locação da plataforma", async function () {
-        const novaTaxa = 500; // 5% (base 10000)
+        const novaTaxa = 500; // 5%
         try {
           await SmartTokenInstance.connect(addr1 as unknown as Signer).setTaxaLocacao(novaTaxa);
           // Se não falhar, devemos forçar uma falha no teste
@@ -240,11 +240,11 @@ describe("SmartImoveis Contract", function () {
       // Adicionar Locatario
       await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
       expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
-      
+            
       const aluguelMensal = 100000; //1000,00
       const taxaMulta = 1000; // 10%
       const uri = "https://example.com/imovel/1";
-
+      
       // Chamar a função adicionarImovel como proprietário
       await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
 
@@ -307,4 +307,339 @@ describe("SmartImoveis Contract", function () {
     );
   });
 
+  describe("Deve permitir que um locatário pague o aluguel", function () {
+    it("Deve permitir que um locatário pague o aluguel", async function () {
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+      
+      const taxaLocacao = 1000; // 10%
+      const aluguelMensal = 100000; //1000,00
+      const taxaMulta = 1000; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // added taxa de locação da plataforma
+      await SmartTokenInstance.setTaxaLocacao(taxaLocacao); // 10%
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      const idImovel = 1;
+      const tx = await SmartTokenInstance.connect(addr2 as unknown as Signer).alugarImovel(idImovel);
+
+      // Verificar evento emitido
+      await expect(tx).to.emit(SmartTokenInstance, "ImovelAlugado").withArgs(
+        idImovel,
+        await addr2.getAddress(),
+      );
+
+      // Verificar se o imóvel foi alugado corretamente
+      const imovel = await SmartTokenInstance.getImovel(idImovel);
+      expect(imovel.locatario).to.equal(await addr2.getAddress());
+
+      // Adicionar BRL ao locatário      
+      const mintAmount = 2000;
+      await brlTokenInstance.mint(await addr2.getAddress(), mintAmount);
+      expect(await brlTokenInstance.balanceOf(await addr2.getAddress())).to.equal(mintAmount * 10 ** 2);
+      
+      // Aprovar o contrato SmartImoveis a gastar BRL
+      await brlTokenInstance.connect(addr2 as unknown as Signer).approve(await SmartTokenInstance.getAddress(), mintAmount * 10 ** 2);      
+      expect(await brlTokenInstance.allowance(await addr2.getAddress(), await SmartTokenInstance.getAddress())).to
+        .equal(mintAmount * 10 ** 2);
+
+      // Pagar o aluguel
+      const txPagarAluguel = await SmartTokenInstance.connect(addr2 as unknown as Signer).pagarAluguel(idImovel);
+      
+      // Verificar evento emitido de aluguel pago
+      await expect(txPagarAluguel).to.emit(SmartTokenInstance, "AluguelPago").withArgs(
+        idImovel, // ID do imóvel (primeiro imóvel criado)
+        await addr2.getAddress(),
+        aluguelMensal
+        );
+
+      // Verificar o evento de taxa de locação paga
+      const taxaPlataforma = (aluguelMensal * taxaLocacao) / 10000;
+      await expect(txPagarAluguel).to.emit(SmartTokenInstance, "TaxaPlataformaEnviada").withArgs(
+        idImovel, // ID do imóvel (primeiro imóvel criado)
+        taxaPlataforma,
+      );
+    });
+  });
+
+  describe("Encerramento de contrato", function () {
+    it("Não deve permitir que um endereço sem a role LOCATARIO_ROLE solicite encerramento", async function () {
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+
+      const aluguelMensal = 1000*10 ** 2;//1000,00
+      const taxaMulta = 10*10 ** 2; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      const idImovel = 1;
+      const tx = await SmartTokenInstance.connect(addr2 as unknown as Signer).alugarImovel(idImovel);
+
+      // Verificar evento emitido
+      await expect(tx).to.emit(SmartTokenInstance, "ImovelAlugado").withArgs(
+        1, // ID do imóvel (primeiro imóvel criado)
+        await addr2.getAddress(),
+      );
+
+      // Verificar se o imóvel foi alugado corretamente
+      const imovel = await SmartTokenInstance.getImovel(1);
+      expect(imovel.locatario).to.equal(await addr2.getAddress());
+
+      await expect(
+        SmartTokenInstance.connect(addr3 as unknown as Signer).solicitarEncerramentoLocatario(idImovel)
+      ).to.be.revertedWithCustomError(SmartTokenInstance, "AccessControlUnauthorizedAccount");
+    });
+
+    it("Não deve permitir solicitação LOCATÁRIO para imóvel não alugado", async function () {
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+
+      const aluguelMensal = 1000*10 ** 2;//1000,00
+      const taxaMulta = 10*10 ** 2; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      const imovel = 1
+      await expect(
+        SmartTokenInstance.connect(addr2 as unknown as Signer).solicitarEncerramentoLocatario(imovel)
+      ).to.be.revertedWith("Imovel nao alugado");
+    });
+
+    it("Deve permitir que um LOCATÁRIO solicite encerramento do contrato", async function () {
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+
+      const aluguelMensal = 1000*10 ** 2;//1000,00
+      const taxaMulta = 10*10 ** 2; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      const idImovel = 1;
+      const tx = await SmartTokenInstance.connect(addr2 as unknown as Signer).alugarImovel(idImovel);
+
+      // Verificar evento emitido
+      await expect(tx).to.emit(SmartTokenInstance, "ImovelAlugado").withArgs(
+        1, // ID do imóvel (primeiro imóvel criado)
+        await addr2.getAddress(),
+      );
+
+      // Verificar se o imóvel foi alugado corretamente
+      const imovel = await SmartTokenInstance.getImovel(1);
+      expect(imovel.locatario).to.equal(await addr2.getAddress());
+
+      const txEncerramento = await SmartTokenInstance.connect(addr2 as unknown as Signer).solicitarEncerramentoLocatario(idImovel);
+
+      // Verificar evento emitido
+      await expect(txEncerramento).to.emit(SmartTokenInstance, "SolicitacaoEncerramento").withArgs(
+        1, // ID do imóvel (primeiro imóvel criado)
+        await addr2.getAddress(),
+      );
+    });
+
+    it("Não deve permitir solicitação PROPRIETÁRIO para imóvel não alugado", async function () {
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+
+      const aluguelMensal = 1000*10 ** 2;//1000,00
+      const taxaMulta = 10*10 ** 2; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      const imovel = 1
+      await expect(
+        SmartTokenInstance.connect(addr1 as unknown as Signer).solicitarEncerramentoProprietario(imovel)
+      ).to.be.revertedWith("Imovel nao alugado");
+    });
+
+    it("Deve permitir que o PROPRIETÁRIO solicite encerramento do contrato", async function () {
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+
+      const aluguelMensal = 1000*10 ** 2;//1000,00
+      const taxaMulta = 10*10 ** 2; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      const idImovel = 1;
+      const tx = await SmartTokenInstance.connect(addr2 as unknown as Signer).alugarImovel(idImovel);
+
+      // Verificar evento emitido
+      await expect(tx).to.emit(SmartTokenInstance, "ImovelAlugado").withArgs(
+        1, // ID do imóvel (primeiro imóvel criado)
+        await addr2.getAddress(),
+      );
+
+      // Verificar se o imóvel foi alugado corretamente
+      const imovel = await SmartTokenInstance.getImovel(1);
+      expect(imovel.locatario).to.equal(await addr2.getAddress());
+
+      const txEncerramento = await SmartTokenInstance.connect(addr1 as unknown as Signer).solicitarEncerramentoProprietario(idImovel);
+
+      // Verificar evento emitido
+      await expect(txEncerramento).to.emit(SmartTokenInstance, "SolicitacaoEncerramento").withArgs(
+        1, // ID do imóvel (primeiro imóvel criado)
+        await addr1.getAddress(),
+      );
+    });
+  });
+
+  describe("Vistoria", function () {
+    it("Deve realizar a vistoria com aprovação", async function () {
+
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+      
+      // Adicionar Vistoriador
+      await SmartTokenInstance.adicionarVistoriador(await addr3.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.VISTORIADOR_ROLE(), await addr3.getAddress())).to.be.true;
+
+      const aluguelMensal = 100000; //1000,00
+      const taxaMulta = 1000; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      // Alugar o imóvel
+      const idImovel = 1;
+      const tx = await SmartTokenInstance.connect(addr2 as unknown as Signer).alugarImovel(idImovel);
+
+      // Verificar evento emitido
+      await expect(tx).to.emit(SmartTokenInstance, "ImovelAlugado").withArgs(
+        1, // ID do imóvel (primeiro imóvel criado)
+        await addr2.getAddress(),
+      );
+
+      // Verificar se o imóvel foi alugado corretamente
+      const imovel = await SmartTokenInstance.getImovel(idImovel);
+      expect(imovel.locatario).to.equal(await addr2.getAddress());
+    
+      // Solicita encerramento de contrato de locação
+      const txEncerramento = await SmartTokenInstance.connect(addr2 as unknown as Signer).solicitarEncerramentoLocatario(1);
+
+      // Verificar evento emitido
+      await expect(txEncerramento).to.emit(SmartTokenInstance, "SolicitacaoEncerramento").withArgs(
+        idImovel,
+        await addr2.getAddress(),
+      );  
+
+      // Realizar a vistoria
+      const txVistoria = await SmartTokenInstance.connect(addr3 as unknown as Signer).realizarVistoria(idImovel,true);
+      await expect(txVistoria).to.emit(SmartTokenInstance, "VistoriaConcluida").withArgs(
+        idImovel,
+        true
+      );
+    });
+
+    it("Deve realizar a vistoria, reprovar o imóvel e emitir multa", async function () {
+
+      // Adicionar proprietário
+      await SmartTokenInstance.adicionarProprietario(await addr1.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await addr1.getAddress())).to.be.true;
+
+      // Adicionar Locatario
+      await SmartTokenInstance.adicionarLocatario(await addr2.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await addr2.getAddress())).to.be.true;
+      
+      // Adicionar Vistoriador
+      await SmartTokenInstance.adicionarVistoriador(await addr3.getAddress());
+      expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.VISTORIADOR_ROLE(), await addr3.getAddress())).to.be.true;
+      
+      const taxaLocacao = 1000; // 10%
+      const aluguelMensal = 100000; //1000,00
+      const taxaMulta = 1000; // 10%
+      const uri = "https://example.com/imovel/1";
+
+      // added taxa de locação da plataforma
+      await SmartTokenInstance.setTaxaLocacao(taxaLocacao); // 10%
+
+      // Chamar a função adicionarImovel como proprietário
+      await SmartTokenInstance.connect(addr1 as unknown as Signer).adicionarImovel(aluguelMensal, taxaMulta, uri);
+
+      // Alugar o imóvel
+      const idImovel = 1;
+      const tx = await SmartTokenInstance.connect(addr2 as unknown as Signer).alugarImovel(idImovel);
+
+      // Verificar evento emitido
+      await expect(tx).to.emit(SmartTokenInstance, "ImovelAlugado").withArgs(
+        idImovel,
+        await addr2.getAddress(),
+      );
+
+      // Verificar se o imóvel foi alugado corretamente
+      const imovel = await SmartTokenInstance.getImovel(idImovel);
+      expect(imovel.locatario).to.equal(await addr2.getAddress());
+    
+      // Solicita encerramento de contrato de locação
+      const txEncerramento = await SmartTokenInstance.connect(addr2 as unknown as Signer).solicitarEncerramentoLocatario(1);
+
+      // Verificar evento emitido
+      await expect(txEncerramento).to.emit(SmartTokenInstance, "SolicitacaoEncerramento").withArgs(
+        idImovel,
+        await addr2.getAddress(),
+      );  
+
+      // Realizar a vistoria
+      const txVistoria = await SmartTokenInstance.connect(addr3 as unknown as Signer).realizarVistoria(idImovel,false);
+      await expect(txVistoria).to.emit(SmartTokenInstance, "VistoriaConcluida").withArgs(
+        idImovel,
+        false
+      );
+
+      // Check Multa
+      await expect(txVistoria).to.emit(SmartTokenInstance, "MultaAplicada").withArgs(
+        idImovel,
+        10000,
+      );
+    });
+  
+  });
 });

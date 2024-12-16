@@ -25,20 +25,20 @@ describe("BRLToken Contract Test", function () {
     });
 
     it("Deve ter 3 casas decimais", async function () {
-        expect(await brlToken.decimals()).to.equal(3);
+        expect(await brlToken.decimals()).to.equal(2);
     });
 
     it("Deve permitir que o proprietário emita tokens", async function () {
-        const mintAmount = 1000; // 1000 tokens com 3 casas decimais
+        const mintAmount = 100; // 100 tokens com 2 casas decimais
         await brlToken.mint(addr1.address, mintAmount);
 
         // Verificar o saldo de addr1
         const balance = await brlToken.balanceOf(addr1.address);
-        expect(balance).to.equal(mintAmount * 10 ** 3); // 1000 * 10^3 = 1.000.000 tokens com 3 casas decimais
+        expect(balance).to.equal(mintAmount * 10 ** 2); // 100 * 10^2 = 1.000 tokens com 2 casas decimais
     });
 
     it("Não deve permitir que não-proprietários emitam tokens", async function () {
-        const mintAmount = 1000;
+        const mintAmount = 100;
     
         // Espera que o mint falhe para addr1 (não-proprietário) com o erro personalizado
         await expect(brlToken.connect(addr1 as  unknown as Signer).mint(addr2.address, mintAmount))
@@ -47,21 +47,21 @@ describe("BRLToken Contract Test", function () {
     });
 
     it("Deve permitir que o proprietário transfira tokens", async function () {
-        const mintAmount = 1000;
+        const mintAmount = 100;
         await brlToken.mint(owner.address, mintAmount);
 
         // Verificar o saldo inicial do proprietário
         const initialBalance = await brlToken.balanceOf(owner.address);
-        expect(initialBalance).to.equal(mintAmount * 10 ** 3); // 1000 * 10^3 = 1.000.000 tokens com 3 casas decimais
+        expect(initialBalance).to.equal(mintAmount * 10 ** 2); // 100 * 10^2 = 1.000 tokens com 2 casas decimais
 
         // Transferir tokens para addr1
-        await brlToken.transfer(addr1.address, mintAmount * 10 ** 3);
+        await brlToken.transfer(addr1.address, mintAmount * 10 ** 2);
 
         // Verificar os saldos após a transferência
         const finalOwnerBalance = await brlToken.balanceOf(owner.address);
         const finalAddr1Balance = await brlToken.balanceOf(addr1.address);
 
         expect(finalOwnerBalance).to.equal(0);
-        expect(finalAddr1Balance).to.equal(mintAmount * 10 ** 3);
+        expect(finalAddr1Balance).to.equal(mintAmount * 10 ** 2);
     });
 });
