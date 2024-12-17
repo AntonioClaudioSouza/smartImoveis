@@ -640,6 +640,160 @@ describe("SmartImoveis Contract", function () {
         10000,
       );
     });
-  
+    
+  });
+});
+
+describe("SmartImoveis Contract - Pagar Multa", function () {
+  let brlTokenInstance: BRLToken;
+  let SmartTokenInstance: SmartImoveis;  
+  let owner: SignerWithAddress, locatarioAddress: SignerWithAddress, proprietarioAddress: SignerWithAddress, vistoriadorAddress: SignerWithAddress;
+
+  const MINT_AMOUNT = 1000000; // 1.000.000,00
+  const MINT_AMOUNT_INSUFICIENTE = 1; // 1,00
+  const TAXA_MULTA = 1000; // 10%
+  const MULTA_EXPERADA = 10000; // 10%
+  const TAXA_LOCACAO_PLATAFORMA = 1000; // 10%
+  const ALUGUEL_MENSAL = 100000; //1000,00
+  const idImovel = 1;
+  const URI = "https://example.com/imovel/1";
+
+  beforeEach(async function () {
+    // Pegando os signatários
+    [owner, locatarioAddress, proprietarioAddress, vistoriadorAddress] = await ethers.getSigners();
+
+    // Implantar o contrato BRLToken (ERC20)
+    const BRLTokenContract = await ethers.getContractFactory("BRLToken");
+    brlTokenInstance = await BRLTokenContract.deploy(owner.address);
+    
+    // Implantar o contrato SmartImoveis
+    const SmartTokenContract = await ethers.getContractFactory("SmartImoveis");
+    SmartTokenInstance = await SmartTokenContract.deploy(await brlTokenInstance.getAddress());
+    
+    // Verificar se o contrato foi implantado corretamente
+    expect(await SmartTokenInstance.getAddress()).to.not.be.null;
+
+    // Setar a taxa de locação da plataforma
+    await SmartTokenInstance.setTaxaLocacao(TAXA_LOCACAO_PLATAFORMA);
+
+    const taxa = await SmartTokenInstance.getTaxaLocacao();
+    expect(taxa).to.equal(TAXA_LOCACAO_PLATAFORMA);
+
+    // Adicionar proprietário
+    await SmartTokenInstance.adicionarProprietario(await proprietarioAddress.getAddress());
+    expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.PROPRIETARIO_ROLE(), await proprietarioAddress.getAddress())).to.be.true;
+
+    // Adicionar Locatario
+    await SmartTokenInstance.adicionarLocatario(await locatarioAddress.getAddress());
+    expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.LOCATARIO_ROLE(), await locatarioAddress.getAddress())).to.be.true;
+
+    // Adicionar Vistoriador
+    await SmartTokenInstance.adicionarVistoriador(await vistoriadorAddress.getAddress());
+    expect(await SmartTokenInstance.hasRole(await SmartTokenInstance.VISTORIADOR_ROLE(), await vistoriadorAddress.getAddress())).to.be.true;
+
+    // Adicionar imóvel
+    await SmartTokenInstance.connect(proprietarioAddress as unknown as Signer).adicionarImovel(ALUGUEL_MENSAL, TAXA_MULTA, URI);
+    expect(await SmartTokenInstance.getImovel(idImovel)).to.not.be.null;
+   
+    // Alugar imóvel
+    await SmartTokenInstance.connect(locatarioAddress as unknown as Signer).alugarImovel(idImovel);
+    expect((await SmartTokenInstance.getImovel(idImovel)).locatario).to.equal(await locatarioAddress.getAddress());    
+  });
+
+  it("Deve pagar a multa com sucesso", async function () {
+    // Solicitar encerramento
+    await expect(SmartTokenInstance.connect(locatarioAddress as unknown as Signer).solicitarEncerramentoLocatario(idImovel))
+     .to.emit(SmartTokenInstance, "SolicitacaoEncerramento")
+     .withArgs(idImovel, locatarioAddress);
+
+ 
+   // Configurar vistoria como não aprovada
+   await SmartTokenInstance.connect(vistoriadorAddress as unknown as Signer).realizarVistoria(idImovel,false);
+   
+   // Create tokens for locatario
+   await brlTokenInstance.mint(await locatarioAddress.getAddress(), MINT_AMOUNT);
+   expect(await brlTokenInstance.balanceOf(await locatarioAddress.getAddress())).to.equal(MINT_AMOUNT * 10 ** 2);
+
+   // Aprovação de tokens
+   await brlTokenInstance.connect(locatarioAddress as unknown as Signer).approve(await SmartTokenInstance.getAddress(), 100000);
+
+   // Executa pagamento da multa
+   await expect(SmartTokenInstance.connect(locatarioAddress as unknown as Signer).pagarMulta(idImovel))
+   .to.emit(SmartTokenInstance, "MultaPaga")
+   .withArgs(idImovel, locatarioAddress, MULTA_EXPERADA);
+
+   // Verifica se a multa foi paga
+   expect((await SmartTokenInstance.getImovel(idImovel)).isMultaPaga).to.be.true;
+
+   // Confirmar encerramento de contrato de locacao
+   expect(await SmartTokenInstance.connect(locatarioAddress as unknown as Signer).confirmarEncerramento(idImovel)).to.not.be.null;
+
+   // Verifica se o imovel está disponivel para locacao
+   expect((await SmartTokenInstance.getImovel(idImovel)).isDisponivelParaLocacao).to.be.true;
+  });
+
+  it("Deve falhar ao pagar multa com saldo insuficiente", async function () {
+    // Solicitar encerramento
+    await expect(SmartTokenInstance.connect(locatarioAddress as unknown as Signer).solicitarEncerramentoLocatario(idImovel))
+     .to.emit(SmartTokenInstance, "SolicitacaoEncerramento")
+     .withArgs(idImovel, locatarioAddress);
+
+ 
+   // Configurar vistoria como não aprovada
+   await SmartTokenInstance.connect(vistoriadorAddress as unknown as Signer).realizarVistoria(idImovel,false);
+   
+   // Create tokens for locatario
+   await brlTokenInstance.mint(await locatarioAddress.getAddress(), MINT_AMOUNT_INSUFICIENTE);
+   expect(await brlTokenInstance.balanceOf(await locatarioAddress.getAddress())).to.equal(MINT_AMOUNT_INSUFICIENTE * 10 ** 2);
+
+   // Aprovação de tokens
+   await brlTokenInstance.connect(locatarioAddress as unknown as Signer).approve(await SmartTokenInstance.getAddress(), 100000);
+
+   // Executa pagamento da multa
+   await expect(
+    SmartTokenInstance.connect(locatarioAddress as unknown as Signer).pagarMulta(idImovel)
+   ).to.be.revertedWith("Saldo insuficiente");
+
+   // Verifica se a multa foi paga
+   expect((await SmartTokenInstance.getImovel(idImovel)).isMultaPaga).to.be.false;
+
+   // Confirmar encerramento de contrato de locacao
+   await expect(
+   SmartTokenInstance.connect(locatarioAddress as unknown as Signer).confirmarEncerramento(idImovel)
+   ).to.be.revertedWith("Multa nao paga ou vistoria nao concluida");
+
+   // Verifica se o imovel está disponivel para locacao
+   expect((await SmartTokenInstance.getImovel(idImovel)).isDisponivelParaLocacao).to.be.false;
+  });
+
+  it("Deve falhar ao pagar multa quando já foi paga", async function () {
+    // Solicitar encerramento
+    await expect(SmartTokenInstance.connect(locatarioAddress as unknown as Signer).solicitarEncerramentoLocatario(idImovel))
+     .to.emit(SmartTokenInstance, "SolicitacaoEncerramento")
+     .withArgs(idImovel, locatarioAddress);
+
+ 
+    // Configurar vistoria como não aprovada
+    await SmartTokenInstance.connect(vistoriadorAddress as unknown as Signer).realizarVistoria(idImovel,false);
+   
+    // Create tokens for locatario
+    await brlTokenInstance.mint(await locatarioAddress.getAddress(), MINT_AMOUNT);
+    expect(await brlTokenInstance.balanceOf(await locatarioAddress.getAddress())).to.equal(MINT_AMOUNT * 10 ** 2);
+
+    // Aprovação de tokens
+    await brlTokenInstance.connect(locatarioAddress as unknown as Signer).approve(await SmartTokenInstance.getAddress(), 100000);
+
+    // Executa pagamento da multa
+    await expect(SmartTokenInstance.connect(locatarioAddress as unknown as Signer).pagarMulta(idImovel))
+     .to.emit(SmartTokenInstance, "MultaPaga")
+     .withArgs(idImovel, locatarioAddress, MULTA_EXPERADA);
+
+    // Verifica se a multa foi paga
+    expect((await SmartTokenInstance.getImovel(idImovel)).isMultaPaga).to.be.true;
+
+    // Executa pagamento da multa pela 2x
+    await expect(
+     SmartTokenInstance.connect(locatarioAddress as unknown as Signer).pagarMulta(idImovel)
+    ).to.be.revertedWith("Multa ja foi paga");
   });
 });
