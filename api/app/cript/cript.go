@@ -15,6 +15,18 @@ import (
 	"os"
 )
 
+func Init() error {
+	key := os.Getenv("AES_ENCRYPTION_KEY")
+	if len(key) == 0 {
+		return errors.New("AES_ENCRYPTION_KEY is not set")
+	}
+
+	if len(key) != 32 {
+		return errors.New("AES_ENCRYPTION_KEY needs to have 32 characters")
+	}
+	return nil
+}
+
 func GetEncryptionKey() string {
 	key := os.Getenv("AES_ENCRYPTION_KEY")
 	if len(key) != 32 {

@@ -56,6 +56,8 @@ services:
       DATABASE_PORT: ${POSTGRES_PORT}
       DATABASE_HOST: smartimoveis.postgres
       DATABASE_SSLMODE: ${POSTGRES_SSLMODE}
+      AES_ENCRYPTION_KEY: ${AES_ENCRYPTION_KEY}
+      
     networks:
      - smartImoveis-api-net
 
