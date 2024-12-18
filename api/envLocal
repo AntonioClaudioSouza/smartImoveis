@@ -1,0 +1,6 @@
+POSTGRES_USER=demo
+POSTGRES_PASSWORD=demo123
+POSTGRES_DB=smartimoveis
+
+PGADMIN_EMAIL=admin@smartimoveis.com
+PGADMIN_PASSWORD=admin123
