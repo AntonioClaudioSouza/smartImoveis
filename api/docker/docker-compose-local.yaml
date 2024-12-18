@@ -17,6 +17,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
       - smartImoveis-api-net
 
@@ -32,7 +33,7 @@ services:
     networks:
       - smartImoveis-api-net
 
-  enbpar.api:
+  smartimoveis-api:
     image: goledgerdev/smartimoveis-api:latest
     build:
       context: ..
@@ -52,7 +53,9 @@ services:
       DATABASE_USER: ${POSTGRES_USER}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       DATABASE_DB: ${POSTGRES_DB}
-      DATABASE_URL: smartimoveis.postgres
+      DATABASE_PORT: ${POSTGRES_PORT}
+      DATABASE_HOST: smartimoveis.postgres
+      DATABASE_SSLMODE: ${POSTGRES_SSLMODE}
     networks:
      - smartImoveis-api-net
 
