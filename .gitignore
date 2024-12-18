@@ -7,3 +7,4 @@ besu/contracts/build/contracts
 
 .DS_Store
 tmp
+api/app/.env

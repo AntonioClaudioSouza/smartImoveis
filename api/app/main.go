@@ -1,11 +1,23 @@
 package main
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/goledgerdev/smartimoveis-api/database"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	log.Println("Iniciando a aplicação...")
+	if err := godotenv.Load(); err != nil {
+		log.Println("Erro ao carregar o arquivo .env, usando variáveis de ambiente padrão")
+	}
+
+	if err := database.ConnectDatabase(); err != nil {
+		panic(err)
+	}
 
 	app := fiber.New()
 
