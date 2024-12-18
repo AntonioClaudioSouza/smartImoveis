@@ -5,12 +5,12 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/goledgerdev/smartimoveis-api/cript"
 	"github.com/goledgerdev/smartimoveis-api/database"
 	"github.com/joho/godotenv"
 )
 
-func main() {
-	log.Println("Iniciando a aplicação...")
+func initApp() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Erro ao carregar o arquivo .env, usando variáveis de ambiente padrão")
 	}
@@ -19,6 +19,14 @@ func main() {
 		panic(err)
 	}
 
+	if err := cript.Init(); err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+
+	initApp()
 	app := fiber.New()
 
 	// Middleware de CORS com configurações padrão
