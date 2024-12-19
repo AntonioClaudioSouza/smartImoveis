@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/goledgerdev/smartimoveis-api/cript"
@@ -16,19 +17,24 @@ const (
 )
 
 type User struct {
+	gorm.Model
 	ID         uint      `gorm:"primaryKey"`
-	Name       string    `gorm:"size:100;not null"`           // Nome do usuário
-	Email      string    `gorm:"unique;not null"`             // Email único
-	Password   string    `gorm:"not null"`                    // Senha (armazenar como hash)
-	PrivateKey string    `gorm:"not null"`                    // Chave privada da wallet (criptografada)
-	Role       UserRole  `gorm:"type:userrole_type;not null"` // Role do usuário
-	CreatedAt  time.Time `gorm:"autoCreateTime"`              // Data de criação
-	UpdatedAt  time.Time `gorm:"autoUpdateTime"`              // Data de atualização
+	Name       string    `gorm:"size:100;not null"` // Nome do usuário
+	Email      string    `gorm:"unique;not null"`   // Email único
+	Password   string    `gorm:"not null"`          // Senha (armazenar como hash)
+	PrivateKey string    `gorm:"not null"`          // Chave privada da wallet (criptografada)
+	Role       UserRole  `gorm:"type:userrole_type;not null"`
+	CreatedAt  time.Time `gorm:"autoCreateTime"` // Data de criação
+	UpdatedAt  time.Time `gorm:"autoUpdateTime"` // Data de atualização
 }
 
 // BeforeCreate criptografa a chave privada antes de salvar
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	var err error
+	if len(u.PrivateKey) > 0 {
+		return errors.New("PrivateKey must be empty")
+	}
+
 	u.PrivateKey, err = cript.EncryptKey(u.PrivateKey)
 	if err != nil {
 		return err
