@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/goledgerdev/smartimoveis-api/cript"
 	"github.com/goledgerdev/smartimoveis-api/database"
+	"github.com/goledgerdev/smartimoveis-api/routes"
 	"github.com/joho/godotenv"
 )
 
@@ -36,6 +37,9 @@ func main() {
 		AllowMethods:     "GET, POST",
 		AllowCredentials: true,
 	}))
+
+	// Setup routes
+	routes.SetupUserRoutes(app)
 
 	app.Get("/api/demo", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{

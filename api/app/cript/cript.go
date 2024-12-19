@@ -29,7 +29,7 @@ func Init() error {
 
 func GetEncryptionKey() string {
 	key := os.Getenv("AES_ENCRYPTION_KEY")
-	if len(key) != 32 {
+	if len(key) != 64 {
 		log.Fatal("A chave de criptografia precisa ter 32 caracteres")
 	}
 	return key
