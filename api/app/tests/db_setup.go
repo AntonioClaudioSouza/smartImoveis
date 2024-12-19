@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -12,7 +13,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/jinzhu/gorm"
+	"github.com/goledgerdev/smartimoveis-api/database"
 )
 
 const (
@@ -92,11 +93,16 @@ func CreatePostgresContainer() error {
 
 // Função para esperar o PostgreSQL estar disponível
 func waitForPostgres(dbHost string, dbPort string, dbUser string, dbPassword string, dbName string, retries int, delay time.Duration) error {
+	os.Setenv("DATABASE_HOST", dbHost)
+	os.Setenv("DATABASE_PORT", dbPort)
+	os.Setenv("DATABASE_USER", dbUser)
+	os.Setenv("DATABASE_PASSWORD", dbPassword)
+	os.Setenv("DATABASE_DB", dbName)
+	os.Setenv("DATABASE_SSLMODE", "disable")
+
 	for i := 0; i < retries; i++ {
-		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPassword, dbName)
-		db, err := gorm.Open("postgres", dsn)
+		err := database.ConnectDatabase()
 		if err == nil {
-			defer db.Close()
 			return nil // Se a conexão for bem-sucedida, retorna nil
 		}
 
