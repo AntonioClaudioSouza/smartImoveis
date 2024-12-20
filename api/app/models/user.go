@@ -57,10 +57,16 @@ func CreateUser(db *gorm.DB, name, email, passwordText, role string) error {
 	if err != nil {
 		return err
 	}
+
+	hashedPassword, err := cript.EncryptKey(passwordText)
+	if err != nil {
+		return err
+	}
+
 	user := User{
 		Name:       name,
 		Email:      email,
-		Password:   passwordText,
+		Password:   hashedPassword,
 		Role:       UserRole(role),
 		PrivateKey: privKey,
 	}
