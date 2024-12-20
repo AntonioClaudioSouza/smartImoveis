@@ -20,7 +20,7 @@ func GenerateAESKey(size int) (string, error) {
 
 // UpdateEnvFile updates the .env file, replacing or adding the AES_ENCRYPTION_KEY.
 func UpdateEnvFile(key string) error {
-	envFilePath := ".env"
+	envFilePath := "app/.env"
 
 	// Read the .env file
 	content, err := os.ReadFile(envFilePath)
