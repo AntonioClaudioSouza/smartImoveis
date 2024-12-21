@@ -50,7 +50,7 @@ func ConnectDatabase() error {
 
 	var err error
 	dbInstance, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return errors.New("Falha ao conectar ao banco: " + err.Error())
