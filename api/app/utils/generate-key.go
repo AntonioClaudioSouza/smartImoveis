@@ -54,7 +54,7 @@ func UpdateEnvFile(key string) error {
 
 func main() {
 	// Generate a 32-byte AES key for AES-256
-	key, err := GenerateAESKey(32)
+	key, err := GenerateAESKey(16)
 	if err != nil {
 		fmt.Println("Error generating AES key:", err)
 		os.Exit(1)

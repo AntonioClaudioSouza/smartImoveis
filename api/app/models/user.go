@@ -19,13 +19,14 @@ const (
 type User struct {
 	gorm.Model
 	ID         uint      `gorm:"primaryKey"`
-	Name       string    `gorm:"size:100;not null"` // Nome do usuário
-	Email      string    `gorm:"unique;not null"`   // Email único
-	Password   string    `gorm:"not null"`          // Senha (armazenar como hash)
-	PrivateKey string    `gorm:"not null"`          // Chave privada da wallet (criptografada)
-	Role       UserRole  `gorm:"type:userrole_type;not null"`
+	PrivateKey string    `gorm:"not null"`       // Chave privada da wallet (criptografada)
 	CreatedAt  time.Time `gorm:"autoCreateTime"` // Data de criação
 	UpdatedAt  time.Time `gorm:"autoUpdateTime"` // Data de atualização
+
+	Name     string   `gorm:"size:100;not null"` // Nome do usuário
+	Email    string   `gorm:"unique;not null"`   // Email único
+	Password string   `gorm:"not null"`          // Senha (armazenar como hash)
+	Role     UserRole `gorm:"type:userrole_type;not null"`
 }
 
 // BeforeCreate criptografa a chave privada antes de salvar

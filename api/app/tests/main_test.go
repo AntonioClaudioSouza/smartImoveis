@@ -8,7 +8,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// Setar a chave de criptografia AES
-	os.Setenv("AES_ENCRYPTION_KEY", "01234567890123456789012345678901")
+	os.Setenv("AES_ENCRYPTION_KEY", "63c512c72e50fffffd2d555d48661f41")
 
 	// Criar o container PostgreSQL
 	err := CreatePostgresContainer()
