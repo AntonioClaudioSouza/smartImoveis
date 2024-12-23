@@ -8,4 +8,5 @@ import (
 func SetupSmartContractRoutes(app *fiber.App) {
 	// Setup routes
 	app.Post("/api/registerSmartContract", controllers.RegisterSmartContract)
+	app.Get("/api/getTaxaLocacao", controllers.GetTaxaLocacao)
 }
