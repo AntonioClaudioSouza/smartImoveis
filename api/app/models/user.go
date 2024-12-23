@@ -1,7 +1,6 @@
 package models
 
 import (
-	"errors"
 	"time"
 
 	"github.com/goledgerdev/smartimoveis-api/cript"
@@ -32,13 +31,11 @@ type User struct {
 // BeforeCreate criptografa a chave privada antes de salvar
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	var err error
-	if len(u.PrivateKey) > 0 {
-		return errors.New("PrivateKey must be empty")
-	}
-
-	u.PrivateKey, err = cript.EncryptKey(u.PrivateKey)
-	if err != nil {
-		return err
+	if len(u.PrivateKey) == 0 {
+		u.PrivateKey, err = cript.EncryptKey(u.PrivateKey)
+		if err != nil {
+			return err
+		}
 	}
 
 	u.Password, err = cript.GenerateSHA256(u.Password)
@@ -65,6 +62,18 @@ func CreateUser(db *gorm.DB, name, email, passwordText, role string) error {
 		Password:   passwordText,
 		Role:       UserRole(role),
 		PrivateKey: privKey,
+	}
+
+	return db.Create(&user).Error
+}
+
+func CreateUserWithPrivateKey(db *gorm.DB, name, email, passwordText, privateKey string, role UserRole) error {
+	user := User{
+		Name:       name,
+		Email:      email,
+		Password:   passwordText,
+		Role:       role,
+		PrivateKey: privateKey,
 	}
 
 	return db.Create(&user).Error

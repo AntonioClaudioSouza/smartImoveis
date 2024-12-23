@@ -57,7 +57,10 @@ func ConnectDatabase() error {
 	}
 
 	initializeEnum()
-	if err := dbInstance.AutoMigrate(&models.User{}); err != nil {
+	if err := dbInstance.AutoMigrate(
+		&models.User{},
+		&models.ContractService{},
+	); err != nil {
 		return errors.New("Erro ao realizar a migração: " + err.Error())
 	}
 
@@ -70,6 +73,8 @@ func GetDB() *gorm.DB {
 
 func initializeEnum() error {
 	var exists bool
+
+	//userrole_type
 	err := dbInstance.Raw(`
 		SELECT EXISTS (
 			SELECT 1
@@ -81,10 +86,30 @@ func initializeEnum() error {
 		return err
 	}
 
-	// Cria o tipo ENUM se não existir
 	if !exists {
 		err = dbInstance.Exec(`
 			CREATE TYPE userrole_type AS ENUM ('owner', 'tenant', 'inspector');
+		`).Error
+		if err != nil {
+			return err
+		}
+	}
+
+	// servicetype_type
+	err = dbInstance.Raw(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM pg_type
+			WHERE typname = 'servicetype_type'
+		);
+	`).Scan(&exists).Error
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		err = dbInstance.Exec(`
+			CREATE TYPE servicetype_type AS ENUM ('eth', 'gobesu');
 		`).Error
 		if err != nil {
 			return err
