@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/goledgerdev/smartimoveis-api/cript"
-	"github.com/goledgerdev/smartimoveis-api/services"
 	"gorm.io/gorm"
 )
 
@@ -47,12 +46,7 @@ func (u *User) GetDecryptedPrivateKey() (string, error) {
 	return cript.DecryptKey(u.PrivateKey)
 }
 
-func CreateUser(db *gorm.DB, name, email, passwordText, role string) error {
-
-	createdUser, err := services.CreateUserService(name, email, passwordText, role)
-	if err != nil {
-		return err
-	}
+func CreateUser(db *gorm.DB, id, name, email, passwordText, role string) error {
 
 	privKey, pubKey, address, err := cript.GenerateKeys()
 	if err != nil {
@@ -60,7 +54,7 @@ func CreateUser(db *gorm.DB, name, email, passwordText, role string) error {
 	}
 
 	user := User{
-		ID:         createdUser.ID,
+		ID:         id,
 		PrivateKey: privKey,
 		PublicKey:  pubKey,
 		Address:    address,

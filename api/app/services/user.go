@@ -7,6 +7,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/goledgerdev/smartimoveis-api/database"
+	"github.com/goledgerdev/smartimoveis-api/models"
 )
 
 type AuthUser struct {
@@ -24,8 +27,8 @@ type AuthServiceResponse struct {
 }
 
 func CreateUserService(name, email, password, role string) (*AuthUser, error) {
-	port := os.Getenv("AUTHORIZATION_SERVER_PORT")
-	authServiceURL := fmt.Sprintf("http://smartimoveis.authorization-server:%s/user/create", port)
+	authorizationUrl := os.Getenv("AUTHORIZATION_URL")
+	authServiceURL := fmt.Sprintf("%s/user/create", authorizationUrl)
 	payload := map[string]interface{}{
 		"login":    name,
 		"password": password,
@@ -59,6 +62,12 @@ func CreateUserService(name, email, password, role string) (*AuthUser, error) {
 	var serviceResp AuthServiceResponse
 	if err := json.NewDecoder(resp.Body).Decode(&serviceResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	db := database.GetDB()
+	err = models.CreateUser(db, serviceResp.User.ID, name, email, password, role)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return &serviceResp.User, nil

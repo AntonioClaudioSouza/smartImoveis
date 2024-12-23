@@ -2,8 +2,7 @@ package controllers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/goledgerdev/smartimoveis-api/database"
-	"github.com/goledgerdev/smartimoveis-api/models"
+	"github.com/goledgerdev/smartimoveis-api/services"
 )
 
 func CreateUser(c *fiber.Ctx) error {
@@ -23,14 +22,15 @@ func CreateUser(c *fiber.Ctx) error {
 	}
 
 	// Create user
-	db := database.GetDB()
-	err := models.CreateUser(db, req.Name, req.Email, req.Password, req.Role)
+	user, err := services.CreateUserService(req.Name, req.Email, req.Password, req.Role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status": "User created successfully",
+		"user":   user,
 	})
 }
