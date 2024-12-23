@@ -3,6 +3,8 @@ version: "3.5"
 networks:
   smartImoveis-api-net:
     name: smartImoveis-api-net
+  besu_network:
+    external: true
 
 services:
   postgres:
@@ -80,6 +82,8 @@ services:
       AES_ENCRYPTION_KEY: ${AES_ENCRYPTION_KEY}      
     networks:
      - smartImoveis-api-net
+     - besu_network
+
     depends_on:
      - postgres
      - autorizarion-server
