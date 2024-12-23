@@ -12,7 +12,8 @@ import (
 )
 
 func initApp() {
-	if err := godotenv.Load(); err != nil {
+	err := godotenv.Load()
+	if err != nil {
 		log.Println("Erro ao carregar o arquivo .env, usando variáveis de ambiente padrão")
 	}
 
@@ -39,7 +40,7 @@ func main() {
 	}))
 
 	// Setup routes
-	routes.SetupUserRoutes(app)
+	routes.SetupUserRoutes(app.Group("/api"))
 
 	app.Get("/api/demo", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{

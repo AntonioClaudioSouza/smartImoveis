@@ -3,16 +3,17 @@ package cript
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
+
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func Init() error {
@@ -88,13 +89,23 @@ func DecryptKey(ciphertext string) (string, error) {
 }
 
 // GeneratePrivateKey cria uma chave privada ECDSA e a retorna como uma string hexadecimal
-func GeneratePrivateECDSAKey() (string, error) {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+func GenerateKeys() (string, string, string, error) {
+	// Generate a private key
+	privateKey, err := crypto.GenerateKey()
 	if err != nil {
-		return "", err
+		return "", "", "", err
 	}
 
-	return hex.EncodeToString(privateKey.D.Bytes()), nil
+	// Convert private key to hex
+	privateKeyHex := fmt.Sprintf("%x", privateKey.D.Bytes())
+
+	// Derive the public key
+	publicKey := privateKey.PublicKey
+	publicKeyBytes := crypto.FromECDSAPub(&publicKey) // Serialize the public key
+	publicKeyHex := fmt.Sprintf("%x", publicKeyBytes)
+	address := crypto.PubkeyToAddress(publicKey).Hex()
+
+	return privateKeyHex, publicKeyHex, address, nil
 }
 
 func GenerateSHA256(data string) (string, error) {
