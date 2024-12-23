@@ -8,14 +8,10 @@ import (
 	"github.com/goledgerdev/smartimoveis-api/cript"
 	"github.com/goledgerdev/smartimoveis-api/database"
 	"github.com/goledgerdev/smartimoveis-api/routes"
-	"github.com/joho/godotenv"
 )
 
 func initApp() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Erro ao carregar o arquivo .env, usando variáveis de ambiente padrão")
-	}
-
+	log.Println("Starting SmartImoveis API ...")
 	if err := database.ConnectDatabase(); err != nil {
 		panic(err)
 	}
@@ -23,10 +19,10 @@ func initApp() {
 	if err := cript.Init(); err != nil {
 		panic(err)
 	}
+	log.Println("Starting SmartImoveis API ...SUCCESS")
 }
 
 func main() {
-
 	initApp()
 	app := fiber.New()
 
@@ -40,12 +36,8 @@ func main() {
 
 	// Setup routes
 	routes.SetupUserRoutes(app)
-
-	app.Get("/api/demo", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "demo",
-		})
-	})
+	routes.SetupSmartContractRoutes(app)
+	routes.SetupAdminRoutes(app)
 
 	app.Listen(":8000")
 }
