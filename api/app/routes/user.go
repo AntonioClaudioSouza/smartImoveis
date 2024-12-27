@@ -7,5 +7,9 @@ import (
 
 func SetupUserRoutes(api fiber.Router) {
 	// Setup routes
-	api.Post("/users", controllers.CreateUser)
+	api.Post("/user/create", controllers.CreateUser)
+	api.Post("/user/login", controllers.Login)
+	api.Get("/user/logout", controllers.Logout)
+	api.Get("/user/authenticate", controllers.Authenticate)
+	api.Get("/user/refresh", controllers.Refresh)
 }

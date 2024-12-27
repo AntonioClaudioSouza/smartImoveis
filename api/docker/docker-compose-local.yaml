@@ -22,7 +22,7 @@ services:
       - smartImoveis-api-net
 
   autorizarion-server:
-    image: xandyhoss/authorization-server:1.0
+    image: xandyhoss/authorization-server:1.1
     container_name: smartimoveis.authorization-server
     restart: always
     environment:
