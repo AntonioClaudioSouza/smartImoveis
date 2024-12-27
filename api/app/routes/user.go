@@ -5,7 +5,11 @@ import (
 	"github.com/goledgerdev/smartimoveis-api/controllers"
 )
 
-func SetupUserRoutes(app *fiber.App) {
+func SetupUserRoutes(api fiber.Router) {
 	// Setup routes
-	app.Post("/api/users", controllers.CreateUser)
+	api.Post("/user/create", controllers.CreateUser)
+	api.Post("/user/login", controllers.Login)
+	api.Get("/user/logout", controllers.Logout)
+	api.Get("/user/authenticate", controllers.Authenticate)
+	api.Get("/user/refresh", controllers.Refresh)
 }
