@@ -64,7 +64,7 @@ func CreateUserService(name, email, password, role string) (*AuthUser, error) {
 	defer resp.Body.Close()
 
 	// Check for non-200 status codes
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, errors.New(string(body))
 	}
@@ -105,7 +105,7 @@ func LoginService(login, password string, c *fiber.Ctx) (*AuthUser, error) {
 	defer resp.Body.Close()
 
 	// Check for non-200 status codes
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, errors.New(string(body))
 	}
@@ -118,7 +118,7 @@ func LoginService(login, password string, c *fiber.Ctx) (*AuthUser, error) {
 			Value:    cookie.Value,
 			HTTPOnly: cookie.HttpOnly,
 			Secure:   cookie.Secure,
-			SameSite: string(cookie.SameSite),
+			SameSite: fmt.Sprintf("%d", cookie.SameSite),
 			Domain:   cookie.Domain,
 		})
 	}
@@ -165,7 +165,7 @@ func LogoutService(c *fiber.Ctx) error {
 	defer resp.Body.Close()
 
 	// Check for non-200 status codes
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return errors.New(string(body))
 	}
@@ -218,7 +218,7 @@ func AuthenticateService(c *fiber.Ctx) (*AuthUser, error) {
 	defer resp.Body.Close()
 
 	// Check for non-200 status codes
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, errors.New(string(body))
 	}
@@ -265,7 +265,7 @@ func RefreshService(c *fiber.Ctx) (*RefreshServiceResponse, error) {
 	defer resp.Body.Close()
 
 	// Check for non-200 status codes
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, errors.New(string(body))
 	}
