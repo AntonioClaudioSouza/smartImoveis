@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/goledgerdev/smartimoveis-api/cript"
@@ -15,6 +16,18 @@ const (
 	InspectorRole UserRole = "inspector"
 )
 
+func CheckUserRoleType(role string) error {
+	switch role {
+	case string(OwnerRole):
+		return nil
+	case string(TenantRole):
+		return nil
+	case string(InspectorRole):
+		return nil
+	}
+	return errors.New("invalid user role")
+}
+
 type User struct {
 	gorm.Model
 	ID         string    `gorm:"primaryKey"`
@@ -23,11 +36,6 @@ type User struct {
 	Address    string    `gorm:"not null"`       // Endereço da wallet
 	CreatedAt  time.Time `gorm:"autoCreateTime"` // Data de criação
 	UpdatedAt  time.Time `gorm:"autoUpdateTime"` // Data de atualização
-
-	// Name     string   `gorm:"size:100;not null"` // Nome do usuário
-	// Email    string   `gorm:"unique;not null"`   // Email único
-	// Password string   `gorm:"not null"`          // Senha (armazenar como hash)
-	// Role     UserRole `gorm:"type:userrole_type;not null"`
 }
 
 // BeforeCreate criptografa a chave privada antes de salvar
@@ -46,11 +54,11 @@ func (u *User) GetDecryptedPrivateKey() (string, error) {
 	return cript.DecryptKey(u.PrivateKey)
 }
 
-func CreateUser(db *gorm.DB, id, name, email, passwordText, role string) error {
+func CreateUser(db *gorm.DB, id string) (*User, error) {
 
 	privKey, pubKey, address, err := cript.GenerateKeys()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	user := User{
@@ -60,11 +68,9 @@ func CreateUser(db *gorm.DB, id, name, email, passwordText, role string) error {
 		Address:    address,
 	}
 
-	return db.Create(&user).Error
-}
-
-func GetUsersByRole(db *gorm.DB, role string) ([]User, error) {
-	var users []User
-	err := db.Where("role = ?", role).Find(&users).Error
-	return users, err
+	err = db.Create(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }

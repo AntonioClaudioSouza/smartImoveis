@@ -39,6 +39,9 @@ type RefreshServiceResponse struct {
 var authorizationUrl = os.Getenv("AUTHORIZATION_URL")
 
 func CreateUserService(name, email, password, role string) (*AuthUser, error) {
+	if err := models.CheckUserRoleType(role); err != nil {
+		return nil, err
+	}
 	authServiceURL := fmt.Sprintf("%s/user/create", authorizationUrl)
 	payload := map[string]interface{}{
 		"login":    email,
@@ -76,7 +79,7 @@ func CreateUserService(name, email, password, role string) (*AuthUser, error) {
 	}
 
 	db := database.GetDB()
-	err = models.CreateUser(db, serviceResp.User.ID, name, email, password, role)
+	_, err = models.CreateUser(db, serviceResp.User.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
